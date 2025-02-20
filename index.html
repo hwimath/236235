@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>일차방정식 빈출 (1)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+            margin: 0;
+            padding: 20px;
+        }
+        #gameContainer {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #000;
+        }
+        #energyBar {
+            width: 100%;
+            height: 20px;
+            background-color: #ccc;
+            margin: 10px 0;
+        }
+        #energy {
+            height: 100%;
+            background-color: #000;
+            width: 100%;
+            transition: width 1s linear;
+        }
+        #question {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        #options {
+            display: flex;
+            flex-direction: column;
+        }
+        .option {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #fff;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+        .option:hover {
+            background-color: #ddd;
+        }
+        #nextButton {
+            padding: 10px 20px;
+            background-color: #000;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #nextButton:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        #startScreen, #gameScreen, #endScreen {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>일차방정식 빈출 (1)</h1>
+        <div id="startScreen">
+            <label for="name">이름:</label>
+            <input type="text" id="name" placeholder="이름을 입력하세요">
+            <br><br>
+            <label for="difficulty">난이도:</label>
+            <select id="difficulty">
+                <option value="easiest">하 (시간 제한 없음)</option>
+                <option value="easy">중 (40초)</option>
+                <option value="medium">상 (30초)</option>
+                <option value="hard">최상 (20초)</option>
+            </select>
+            <br><br>
+            <button id="startButton">시작</button>
+        </div>
+        <div id="gameScreen" style="display: none;">
+            <div id="info">
+                <p>남은 기회: <span id="lives">3</span></p>
+                <p>점수: <span id="score">0</span></p>
+                <p>경과 시간: <span id="time">0</span>초</p>
+            </div>
+            <div id="energyBar">
+                <div id="energy"></div>
+            </div>
+            <div id="question"></div>
+            <div id="options"></div>
+            <button id="nextButton" disabled>다음 문제</button>
+        </div>
+        <div id="endScreen" style="display: none;">
+            <h2>게임 종료</h2>
+            <p>최종 점수: <span id="finalScore"></span></p>
+            <p>총 경과 시간: <span id="finalTime"></span>초</p>
+            <button id="submitScore">점수 전송</button>
+            <div id="response"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const problems = [
+                { question: "\\( 3x + 4 = 13 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)"], answer: 1 },
+                { question: "\\( 5x - 2 = 18 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)"], answer: 2 },
+                { question: "\\( 2x + 7 = 15 \\)의 해는?", options: ["\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)", "\\( x = 7 \\)"], answer: 1 },
+                { question: "\\( 4x - 6 = 10 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)"], answer: 2 },
+                { question: "\\( 6x + 3 = 21 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)"], answer: 1 },
+                { question: "\\( \\dfrac{x}{3} + 2 = 5 \\)의 해는?", options: ["\\( x = 6 \\)", "\\( x = 9 \\)", "\\( x = 12 \\)", "\\( x = 15 \\)", "\\( x = 18 \\)"], answer: 1 },
+                { question: "\\( \\dfrac{2x}{5} - 1 = 3 \\)의 해는?", options: ["\\( x = 5 \\)", "\\( x = 10 \\)", "\\( x = 15 \\)", "\\( x = 20 \\)", "\\( x = 25 \\)"], answer: 1 },
+                { question: "\\( \\dfrac{x}{4} + 3 = 7 \\)의 해는?", options: ["\\( x = 8 \\)", "\\( x = 12 \\)", "\\( x = 16 \\)", "\\( x = 20 \\)", "\\( x = 24 \\)"], answer: 2 },
+                { question: "\\( \\dfrac{3x}{2} + 1 = 7 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 4 \\)", "\\( x = 6 \\)", "\\( x = 8 \\)", "\\( x = 10 \\)"], answer: 1 },
+                { question: "\\( \\dfrac{x}{5} - 2 = 1 \\)의 해는?", options: ["\\( x = 5 \\)", "\\( x = 10 \\)", "\\( x = 15 \\)", "\\( x = 20 \\)", "\\( x = 25 \\)"], answer: 2 },
+                { question: "\\( 0.3x + 2 = 5 \\)의 해는?", options: ["\\( x = 5 \\)", "\\( x = 10 \\)", "\\( x = 15 \\)", "\\( x = 20 \\)", "\\( x = 25 \\)"], answer: 1 },
+                { question: "\\( 0.2x - 1 = 3 \\)의 해는?", options: ["\\( x = 10 \\)", "\\( x = 15 \\)", "\\( x = 20 \\)", "\\( x = 25 \\)", "\\( x = 30 \\)"], answer: 2 },
+                { question: "\\( 0.5x + 1 = 4 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 4 \\)", "\\( x = 6 \\)", "\\( x = 8 \\)", "\\( x = 10 \\)"], answer: 2 },
+                { question: "\\( 0.4x - 2 = 2 \\)의 해는?", options: ["\\( x = 5 \\)", "\\( x = 10 \\)", "\\( x = 15 \\)", "\\( x = 20 \\)", "\\( x = 25 \\)"], answer: 1 },
+                { question: "\\( 0.6x + 3 = 9 \\)의 해는?", options: ["\\( x = 5 \\)", "\\( x = 10 \\)", "\\( x = 15 \\)", "\\( x = 20 \\)", "\\( x = 25 \\)"], answer: 1 },
+                { question: "\\( 2(x + 4) = 14 \\)의 해는?", options: ["\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)", "\\( x = 7 \\)"], answer: 0 },
+                { question: "\\( 3(x - 2) = 9 \\)의 해는?", options: ["\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)", "\\( x = 7 \\)"], answer: 2 },
+                { question: "\\( 4(x + 1) = 12 \\)의 해는?", options: ["\\( x = 1 \\)", "\\( x = 2 \\)", "\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)"], answer: 1 },
+                { question: "\\( 5(x - 3) = 10 \\)의 해는?", options: ["\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)", "\\( x = 7 \\)"], answer: 2 },
+                { question: "\\( 2(x + 5) = 16 \\)의 해는?", options: ["\\( x = 2 \\)", "\\( x = 3 \\)", "\\( x = 4 \\)", "\\( x = 5 \\)", "\\( x = 6 \\)"], answer: 1 },
+                { question: "어떤 수에 5를 더하고 3을 곱하면 18이 됩니다. 이 수는?", options: ["1", "2", "3", "4", "5"], answer: 0 },
+                { question: "철수가 하루에 읽는 페이지 수는 고정되어 있습니다. 4일 동안 48페이지를 읽었다면, 하루에 읽는 페이지 수는?", options: ["8", "10", "12", "14", "16"], answer: 2 },
+                { question: "두 수의 합이 20이고 차가 4입니다. 작은 수는?", options: ["6", "7", "8", "9", "10"], answer: 2 },
+                { question: "A는 B보다 3살 많고, A의 나이가 15살일 때 B의 나이는?", options: ["9", "10", "11", "12", "13"], answer: 3 },
+                { question: "한 상자에 사과 \\( x \\)개가 들어 있습니다. 2상자에는 사과가 모두 몇 개입니까?", options: ["\\( 2x \\)", "\\( x + 2 \\)", "\\( x - 2 \\)", "\\( \\dfrac{x}{2} \\)", "\\( 2x + 2 \\)"], answer: 0 }
+            ];
+
+            const difficultySettings = {
+                easiest: { time: null, score: 10 },
+                easy: { time: 40, score: 13 },
+                medium: { time: 30, score: 15 },
+                hard: { time: 20, score: 20 }
+            };
+
+            let currentProblemIndex = 0;
+            let score = 0;
+            let lives = 3;
+            let totalTime = 0;
+            let timerInterval;
+            let energyInterval;
+            let selectedDifficulty;
+            let name;
+            let problemOrder = [...Array(problems.length).keys()];
+
+            document.getElementById('startButton').addEventListener('click', () => {
+                name = document.getElementById('name').value.trim();
+                if (!name) {
+                    alert('이름을 입력해주세요.');
+                    return;
+                }
+                selectedDifficulty = document.getElementById('difficulty').value;
+                document.getElementById('startScreen').style.display = 'none';
+                document.getElementById('gameScreen').style.display = 'block';
+                shuffleArray(problemOrder);
+                loadProblem();
+                startTotalTime();
+            });
+
+            function startTotalTime() {
+                timerInterval = setInterval(() => {
+                    totalTime++;
+                    document.getElementById('time').textContent = totalTime;
+                }, 1000);
+            }
+
+            function loadProblem() {
+                if (currentProblemIndex >= problemOrder.length) {
+                    currentProblemIndex = 0;
+                    shuffleArray(problemOrder);
+                }
+                const problem = problems[problemOrder[currentProblemIndex]];
+                document.getElementById('question').innerHTML = problem.question;
+                const optionsDiv = document.getElementById('options');
+                optionsDiv.innerHTML = '';
+                const shuffledOptions = [...problem.options];
+                const correctAnswer = problem.options[problem.answer];
+                shuffleArray(shuffledOptions);
+                shuffledOptions.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.classList.add('option');
+                    button.innerHTML = option;
+                    button.addEventListener('click', () => checkAnswer(option === correctAnswer, option, correctAnswer));
+                    optionsDiv.appendChild(button);
+                });
+                MathJax.typeset();
+                startEnergyBar();
+            }
+
+            function startEnergyBar() {
+                const timeLimit = difficultySettings[selectedDifficulty].time;
+                if (timeLimit) {
+                    let timeLeft = timeLimit;
+                    document.getElementById('energy').style.width = '100%';
+                    energyInterval = setInterval(() => {
+                        timeLeft--;
+                        const percentage = (timeLeft / timeLimit) * 100;
+                        document.getElementById('energy').style.width = percentage + '%';
+                        if (timeLeft <= 0) {
+                            clearInterval(energyInterval);
+                            checkAnswer(false, null, problems[problemOrder[currentProblemIndex]].options[problems[problemOrder[currentProblemIndex]].answer]);
+                        }
+                    }, 1000);
+                } else {
+                    document.getElementById('energyBar').style.display = 'none';
+                }
+            }
+
+            function checkAnswer(isCorrect, selected, correct) {
+                clearInterval(energyInterval);
+                if (isCorrect) {
+                    score += difficultySettings[selectedDifficulty].score;
+                    document.getElementById('score').textContent = score;
+                    alert('정답입니다!');
+                } else {
+                    lives--;
+                    document.getElementById('lives').textContent = lives;
+                    alert(`오답입니다. 정답은 '${correct}'입니다.`);
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+                document.getElementById('nextButton').disabled = false;
+            }
+
+            document.getElementById('nextButton').addEventListener('click', () => {
+                currentProblemIndex++;
+                loadProblem();
+                document.getElementById('nextButton').disabled = true;
+            });
+
+            function endGame() {
+                clearInterval(timerInterval);
+                document.getElementById('gameScreen').style.display = 'none';
+                document.getElementById('endScreen').style.display = 'block';
+                document.getElementById('finalScore').textContent = score;
+                document.getElementById('finalTime').textContent = totalTime;
+            }
+
+            document.getElementById('submitScore').addEventListener('click', () => {
+                saveData('일차방정식 빈출 (1)', name, score, totalTime);
+            });
+
+            function saveData(game, name, score, elapsedTime) {
+                const FUNCTION_URL = "https://us-central1-record-f420d.cloudfunctions.net/report";
+                const requestData = {
+                    game,
+                    name,
+                    score: parseInt(score, 10),
+                    elapsedTime: parseInt(elapsedTime, 10)
+                };
+                fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('서버 응답 오류');
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('response').innerText = `성공: ${JSON.stringify(data, null, 2)}`;
+                })
+                .catch(error => {
+                    console.error('요청 실패:', error);
+                    document.getElementById('response').innerText = `네트워크 오류: ${error.message}`;
+                });
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+        });
+    </script>
+</body>
+</html>
